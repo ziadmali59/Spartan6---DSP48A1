@@ -22,7 +22,8 @@
 
 module DSP_Top
     #(parameter RSTTYPE ="SYNC",MREG=1,CARRYINSEL="OPMODE5"
-    ,CARRYINREG=1,PREG=1,CARRYOUTREG=1)
+    ,CARRYINREG=1,PREG=1,CARRYOUTREG=1,A0REG=0
+    ,A1REG=1,B0REG=0,B1REG=1,CREG=1,DREG=1,width=18,B_INPUT=0,OPMODEREG=1)
     (
         output [17:0] BCOUT,
         output [47:0] PCOUT,P,
@@ -44,17 +45,35 @@ module DSP_Top
     wire [47:0] outOfX_sig,outOfZ_sig;
     //wire out of cyi stageB->stageB
     wire outOfCYI_sig;
+    //wire to concat
+    wire [47:0] concatenated_sig;
+    //wire out of c port
+    wire [47:0] C_sig;
+    //wire out of mul
+    wire [35:0] Mul_sig;
+    //wires of opmode
+    wire [7:0] opmode_reg;
+    wire [7:0] opmode_mux;
+
+     Reg #(.WIDTH_IN(8),.RSTTYPE(RSTTYPE)) OPMODE_REG
+    (.out(opmode_reg),.in(opmode),.clk(clk),.rst(RSTM),.ce(CEM));
+
+    Mux #(.WIDTH_IN(8),.PIPELINE(MREG)) OPMODE_MUX
+    (.out(opmode_mux),.in_REG(opmode_reg),.in_COMB(opmode));
+
+    STAGE1 #(A0REG,A1REG,B0REG,B1REG,CREG,DREG,RSTTYPE,width,B_INPUT) B1
+    (clk,CEA,CEB,CEC,CED,CEOPMODE,RSTA,RSTB,RSTC,RSTD,opmode_mux[6],opmode_mux[4],RSTOPMODE,A,B,D,BCIN,C,concatenated_sig,C_sig,Mul_sig,BCOUT);
 
     Stage_A #(RSTTYPE,MREG,CARRYINSEL,CARRYINREG) BA
     (.outOfX(outOfX_sig),.outOfZ(outOfZ_sig),.M(M),.outOfCYI(outOfCYI_sig)
-    ,.outOfMul(/*martina signal*/),.PCIN(PCIN),.outOfCport(/*martina signal*/)
-    ,.outOfDReg(/*martina signal*/),.PCOUT(PCOUT_sig),.opmode(opmode)
+    ,.outOfMul(Mul_sig),.PCIN(PCIN),.outOfCport(C_sig)
+    ,.outOfDReg(concatenated_sig),.PCOUT(PCOUT_sig),.opmode(opmode_mux)
     ,.CARRYIN(CARRYIN),.clk(clk),.RSTM(RSTM),.CEM(CEM),.RSTCARRYIN(RSTCARRYIN),.CECARRYIN(CECARRYIN));
 
     Stage_B #(RSTTYPE,PREG,CARRYOUTREG) BB
     (.P(P),.PCOUT(PCOUT_sig),.CARRYOUT(CARRYOUT)
     ,.CARRYOUTF(CARRYOUTF),.outOfX(outOfX_sig)
-    ,.outOfZ(outOfZ_sig),.outOfCYI(outOfCYI_sig),.opmode(opmode)
+    ,.outOfZ(outOfZ_sig),.outOfCYI(outOfCYI_sig),.opmode(opmode_mux)
     ,.clk(clk),.CEP(CEP),.RSTP(RSTP),.CECARRYIN(CECARRYIN),.RSTCARRYIN(RSTCARRYIN));
 
     assign PCOUT=PCOUT_sig;

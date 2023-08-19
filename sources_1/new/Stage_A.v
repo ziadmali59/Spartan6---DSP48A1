@@ -43,7 +43,7 @@ module Stage_A
     wire CYI_sig;
     //wire out of cyi mux2
     wire ca;
-
+    wire [47:0] Mul_test={12'b0,MMUX_sig};
     Reg #(.WIDTH_IN(36),.RSTTYPE(RSTTYPE)) M_REG
     (.out(MREG_sig),.in(outOfMul),.clk(clk),.rst(RSTM),.ce(CEM));
 
@@ -64,10 +64,10 @@ module Stage_A
     assign  outOfCYI=ca;
     //here outofDreg will be concatenation of D,A,B
     Mux4x1 #(.WIDTH_IN(48)) X
-    (.out(outOfX),.a(outOfDReg),.b(PCOUT),.c(MMUX_sig),.d(0),.sel(opmode[1:0]));
+    (.out(outOfX),.a(0),.b(Mul_test),.c(PCOUT),.d(outOfDReg),.sel(opmode[1:0]));
 
     Mux4x1 #(.WIDTH_IN(48)) Z
-    (.out(outOfZ),.a(outOfCport),.b(PCOUT),.c(PCIN),.d(0),.sel(opmode[3:2]));
+    (.out(outOfZ),.a(0),.b(PCIN),.c(PCOUT),.d(outOfCport),.sel(opmode[3:2]));
 
 
 
